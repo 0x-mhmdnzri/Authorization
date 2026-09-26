@@ -177,13 +177,33 @@ New table: `Policies`
 | GET | /api/pbac/resources/{id}/content | Bearer | Content via PBAC |
 
 
+
+### ✅ 6. PBAC-Purpose – Purpose-Based Access Control (`feature/06-pbac-purpose`)
+
+Access is allowed only for an explicitly stated and permitted **purpose**.
+
+Tables: `Purposes`, `ResourcePurposes`, `PurposeAccessLogs`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | /api/purpose/purposes | Admin | Create purpose |
+| GET | /api/purpose/purposes | Bearer | List purposes |
+| POST | /api/purpose/assign | Admin | Assign purpose to resource |
+| GET | /api/purpose/resources/{id}/purposes | Bearer | Purposes of a resource |
+| POST | /api/purpose/evaluate | Bearer | Evaluate with purpose |
+| GET | /api/purpose/resources/{id}/content?purpose=CODE | Bearer | Content (purpose required) |
+| GET | /api/purpose/logs | Admin | Access logs |
+
+Seeded purposes: TREATMENT, RESEARCH, BILLING, AUDIT
+
+
 ## Planned (one feature branch each)
 
 - [x] ABAC (`feature/02-abac`)
 - [x] MAC (`feature/03-mac`)
 - [x] DAC (`feature/04-dac`)
 - [x] PBAC-Policy (`feature/05-pbac-policy`)
-- [ ] PBAC (Purpose)
+- [x] PBAC-Purpose (`feature/06-pbac-purpose`)
 - [ ] RAdAC
 - [ ] ReBAC
 - [ ] PAC

@@ -62,6 +62,7 @@ builder.Services.AddScoped<IAbacService, AbacService>();
 builder.Services.AddScoped<IMacService, MacService>();
 builder.Services.AddScoped<IDacService, DacService>();
 builder.Services.AddScoped<IPbacService, PbacService>();
+builder.Services.AddScoped<IPurposeService, PurposeService>();
 
 // -------------------- Controllers & OpenAPI --------------------
 builder.Services.AddControllers();
@@ -286,6 +287,38 @@ using (var scope = app.Services.CreateScope())
                     MaxResourceSensitivity = "Restricted"
                 }
             );
+            await context.SaveChangesAsync();
+        }
+
+        // Seed purposes (Purpose-Based AC)
+        if (!await context.Purposes.AnyAsync())
+        {
+            var treatment = new Purpose { Code = "TREATMENT", Name = "Treatment", Description = "Clinical treatment of the patient" };
+            var research = new Purpose { Code = "RESEARCH", Name = "Research", Description = "Scientific research (requires extra approval)" };
+            var billing = new Purpose { Code = "BILLING", Name = "Billing", Description = "Insurance and billing operations" };
+            var audit = new Purpose { Code = "AUDIT", Name = "Audit", Description = "Compliance and internal audit" };
+            context.Purposes.AddRange(treatment, research, billing, audit);
+            await context.SaveChangesAsync();
+
+            // Link purposes to existing resources if any
+            var resources = await context.Resources.ToListAsync();
+            foreach (var res in resources)
+            {
+                // All resources allow TREATMENT and BILLING by default
+                context.ResourcePurposes.Add(new ResourcePurpose { ResourceId = res.Id, PurposeId = treatment.Id });
+                context.ResourcePurposes.Add(new ResourcePurpose { ResourceId = res.Id, PurposeId = billing.Id, AllowedRoles = "Admin,Manager" });
+                // RESEARCH only on non-Restricted and requires consent
+                if (res.Sensitivity != "Restricted" && res.Sensitivity != "TopSecret")
+                {
+                    context.ResourcePurposes.Add(new ResourcePurpose
+                    {
+                        ResourceId = res.Id,
+                        PurposeId = research.Id,
+                        AllowedRoles = "Admin",
+                        RequiresExplicitConsent = true
+                    });
+                }
+            }
             await context.SaveChangesAsync();
         }
     }

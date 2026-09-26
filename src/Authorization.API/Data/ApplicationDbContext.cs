@@ -22,6 +22,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<AbacPolicy> AbacPolicies => Set<AbacPolicy>();
     public DbSet<ResourcePermission> ResourcePermissions => Set<ResourcePermission>();
     public DbSet<Policy> Policies => Set<Policy>();
+    public DbSet<Purpose> Purposes => Set<Purpose>();
+    public DbSet<ResourcePurpose> ResourcePurposes => Set<ResourcePurpose>();
+    public DbSet<PurposeAccessLog> PurposeAccessLogs => Set<PurposeAccessLog>();
 
     // Future: ReBAC, etc.
     // public DbSet<RelationTuple> RelationTuples { get; set; }
@@ -116,6 +119,37 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.Property(p => p.MaxResourceSensitivity).HasMaxLength(50);
             entity.Property(p => p.CreatedBy).HasMaxLength(450);
             entity.HasIndex(p => new { p.ResourceType, p.Action, p.IsEnabled });
+        });
+
+
+        // Purpose-Based Access Control
+        builder.Entity<Purpose>(entity =>
+        {
+            entity.ToTable("Purposes");
+            entity.HasKey(p => p.Id);
+            entity.Property(p => p.Code).HasMaxLength(50).IsRequired();
+            entity.Property(p => p.Name).HasMaxLength(200).IsRequired();
+            entity.HasIndex(p => p.Code).IsUnique();
+        });
+
+        builder.Entity<ResourcePurpose>(entity =>
+        {
+            entity.ToTable("ResourcePurposes");
+            entity.HasKey(rp => rp.Id);
+            entity.HasOne(rp => rp.Resource).WithMany().HasForeignKey(rp => rp.ResourceId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(rp => rp.Purpose).WithMany().HasForeignKey(rp => rp.PurposeId).OnDelete(DeleteBehavior.Restrict);
+            entity.Property(rp => rp.AllowedRoles).HasMaxLength(500);
+            entity.HasIndex(rp => new { rp.ResourceId, rp.PurposeId }).IsUnique();
+        });
+
+        builder.Entity<PurposeAccessLog>(entity =>
+        {
+            entity.ToTable("PurposeAccessLogs");
+            entity.HasKey(l => l.Id);
+            entity.Property(l => l.UserId).HasMaxLength(450).IsRequired();
+            entity.Property(l => l.Action).HasMaxLength(50);
+            entity.Property(l => l.Reason).HasMaxLength(500);
+            entity.HasIndex(l => new { l.UserId, l.ResourceId, l.AccessedAt });
         });
 
     }
