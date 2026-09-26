@@ -17,11 +17,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     {
     }
 
-    // Future: custom tables for ABAC attributes, ReBAC relations, policies, etc.
-    // public DbSet<Permission> Permissions { get; set; }
-    // public DbSet<RolePermission> RolePermissions { get; set; }
-    // public DbSet<Resource> Resources { get; set; }
-    // public DbSet<RelationTuple> RelationTuples { get; set; } // for ReBAC
+    // ABAC tables
+    public DbSet<Resource> Resources => Set<Resource>();
+    public DbSet<AbacPolicy> AbacPolicies => Set<AbacPolicy>();
+
+    // Future: ReBAC, etc.
+    // public DbSet<RelationTuple> RelationTuples { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -53,5 +54,34 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
         builder.Entity<IdentityUserLogin<string>>().ToTable("UserLogins");
         builder.Entity<IdentityRoleClaim<string>>().ToTable("RoleClaims");
         builder.Entity<IdentityUserToken<string>>().ToTable("UserTokens");
+
+        // ABAC
+        builder.Entity<Resource>(entity =>
+        {
+            entity.ToTable("Resources");
+            entity.HasKey(r => r.Id);
+            entity.Property(r => r.Name).HasMaxLength(200).IsRequired();
+            entity.Property(r => r.ResourceType).HasMaxLength(100).IsRequired();
+            entity.Property(r => r.OwnerDepartment).HasMaxLength(100);
+            entity.Property(r => r.Sensitivity).HasMaxLength(50).IsRequired();
+            entity.Property(r => r.OwnerId).HasMaxLength(450);
+            entity.HasIndex(r => r.ResourceType);
+            entity.HasIndex(r => r.OwnerDepartment);
+        });
+
+        builder.Entity<AbacPolicy>(entity =>
+        {
+            entity.ToTable("AbacPolicies");
+            entity.HasKey(p => p.Id);
+            entity.Property(p => p.Name).HasMaxLength(200).IsRequired();
+            entity.Property(p => p.ResourceType).HasMaxLength(100);
+            entity.Property(p => p.Action).HasMaxLength(50).IsRequired();
+            entity.Property(p => p.Effect).HasMaxLength(20).IsRequired();
+            entity.Property(p => p.MinimumClearance).HasMaxLength(50);
+            entity.Property(p => p.AllowedDepartments).HasMaxLength(500);
+            entity.Property(p => p.RequiredSensitivityMax).HasMaxLength(50);
+            entity.HasIndex(p => new { p.ResourceType, p.Action, p.IsEnabled });
+        });
     }
 }
+

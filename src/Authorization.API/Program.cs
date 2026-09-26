@@ -58,6 +58,7 @@ builder.Services.AddAuthorization();
 
 // -------------------- Services --------------------
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IAbacService, AbacService>();
 
 // -------------------- Controllers & OpenAPI --------------------
 builder.Services.AddControllers();
@@ -77,7 +78,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// -------------------- Seed data (Admin role + user) --------------------
+// -------------------- Seed data (RBAC + ABAC) --------------------
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -124,6 +125,114 @@ using (var scope = app.Services.CreateScope())
             {
                 await userManager.AddToRoleAsync(adminUser, "Admin");
             }
+        }
+
+        // Seed a Finance user for ABAC demos
+        const string financeEmail = "finance@authorization.local";
+        var financeUser = await userManager.FindByEmailAsync(financeEmail);
+        if (financeUser == null)
+        {
+            financeUser = new ApplicationUser
+            {
+                UserName = financeEmail,
+                Email = financeEmail,
+                FirstName = "Sara",
+                LastName = "Finance",
+                Department = "Finance",
+                ClearanceLevel = "Confidential",
+                EmailConfirmed = true,
+                IsActive = true
+            };
+            var createResult = await userManager.CreateAsync(financeUser, "Finance123!");
+            if (createResult.Succeeded)
+            {
+                await userManager.AddToRoleAsync(financeUser, "User");
+            }
+        }
+
+        // Seed sample ABAC policies (only if none exist)
+        if (!await context.AbacPolicies.AnyAsync())
+        {
+            context.AbacPolicies.AddRange(
+                new AbacPolicy
+                {
+                    Name = "SameDepartment-Read",
+                    Description = "Users can read resources that belong to their own department",
+                    ResourceType = null,
+                    Action = "Read",
+                    Effect = "Allow",
+                    Priority = 100,
+                    RequireSameDepartment = true
+                },
+                new AbacPolicy
+                {
+                    Name = "Finance-Budget-BusinessHours",
+                    Description = "Finance department can read Budget resources only during business hours",
+                    ResourceType = "Budget",
+                    Action = "Read",
+                    Effect = "Allow",
+                    Priority = 200,
+                    RequireSameDepartment = true,
+                    RequireBusinessHours = true,
+                    AllowedDepartments = "Finance"
+                },
+                new AbacPolicy
+                {
+                    Name = "HighClearance-Confidential",
+                    Description = "Users with Confidential+ clearance can read Confidential resources",
+                    ResourceType = null,
+                    Action = "Read",
+                    Effect = "Allow",
+                    Priority = 150,
+                    MinimumClearance = "Confidential",
+                    RequiredSensitivityMax = "Confidential"
+                },
+                new AbacPolicy
+                {
+                    Name = "Deny-Restricted-Without-TopSecret",
+                    Description = "Explicit deny for Restricted resources unless TopSecret clearance",
+                    ResourceType = null,
+                    Action = "Read",
+                    Effect = "Deny",
+                    Priority = 300,
+                    MinimumClearance = "TopSecret",
+                    RequiredSensitivityMax = "Restricted"
+                }
+            );
+            await context.SaveChangesAsync();
+        }
+
+        // Seed sample resources (only if none exist)
+        if (!await context.Resources.AnyAsync())
+        {
+            var adminId = (await userManager.FindByEmailAsync(adminEmail))?.Id;
+            context.Resources.AddRange(
+                new Resource
+                {
+                    Name = "Q3 Budget Report",
+                    ResourceType = "Budget",
+                    OwnerDepartment = "Finance",
+                    Sensitivity = "Confidential",
+                    OwnerId = adminId
+                },
+                new Resource
+                {
+                    Name = "Public Company Handbook",
+                    ResourceType = "Document",
+                    OwnerDepartment = "HR",
+                    Sensitivity = "Public",
+                    OwnerId = adminId
+                },
+                new Resource
+                {
+                    Name = "Top Secret Project Plan",
+                    ResourceType = "Document",
+                    OwnerDepartment = "IT",
+                    Sensitivity = "Restricted",
+                    OwnerId = adminId
+                }
+            );
+            await context.SaveChangesAsync();
         }
     }
     catch (Exception ex)
