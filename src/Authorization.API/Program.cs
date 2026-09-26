@@ -63,6 +63,7 @@ builder.Services.AddScoped<IMacService, MacService>();
 builder.Services.AddScoped<IDacService, DacService>();
 builder.Services.AddScoped<IPbacService, PbacService>();
 builder.Services.AddScoped<IPurposeService, PurposeService>();
+builder.Services.AddScoped<IRadacService, RadacService>();
 
 // -------------------- Controllers & OpenAPI --------------------
 builder.Services.AddControllers();
@@ -319,6 +320,20 @@ using (var scope = app.Services.CreateScope())
                     });
                 }
             }
+            await context.SaveChangesAsync();
+        }
+
+        // Seed default RAdAC policy
+        if (!await context.RiskPolicies.AnyAsync())
+        {
+            context.RiskPolicies.Add(new RiskPolicy
+            {
+                Name = "Default-Risk-Policy",
+                Description = "Standard thresholds: normal <=30, max acceptable 70, critical need >=80",
+                NormalRiskThreshold = 30,
+                MaxAcceptableRisk = 70,
+                CriticalNeedThreshold = 80
+            });
             await context.SaveChangesAsync();
         }
     }
