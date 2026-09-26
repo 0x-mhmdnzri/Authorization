@@ -25,6 +25,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<Purpose> Purposes => Set<Purpose>();
     public DbSet<ResourcePurpose> ResourcePurposes => Set<ResourcePurpose>();
     public DbSet<PurposeAccessLog> PurposeAccessLogs => Set<PurposeAccessLog>();
+    public DbSet<RiskPolicy> RiskPolicies => Set<RiskPolicy>();
+    public DbSet<RiskAssessmentLog> RiskAssessmentLogs => Set<RiskAssessmentLog>();
 
     // Future: ReBAC, etc.
     // public DbSet<RelationTuple> RelationTuples { get; set; }
@@ -150,6 +152,26 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.Property(l => l.Action).HasMaxLength(50);
             entity.Property(l => l.Reason).HasMaxLength(500);
             entity.HasIndex(l => new { l.UserId, l.ResourceId, l.AccessedAt });
+        });
+
+
+        // RAdAC
+        builder.Entity<RiskPolicy>(entity =>
+        {
+            entity.ToTable("RiskPolicies");
+            entity.HasKey(p => p.Id);
+            entity.Property(p => p.Name).HasMaxLength(200).IsRequired();
+        });
+
+        builder.Entity<RiskAssessmentLog>(entity =>
+        {
+            entity.ToTable("RiskAssessmentLogs");
+            entity.HasKey(l => l.Id);
+            entity.Property(l => l.UserId).HasMaxLength(450).IsRequired();
+            entity.Property(l => l.Action).HasMaxLength(50);
+            entity.Property(l => l.Decision).HasMaxLength(50);
+            entity.Property(l => l.Reason).HasMaxLength(500);
+            entity.HasIndex(l => new { l.UserId, l.AssessedAt });
         });
 
     }

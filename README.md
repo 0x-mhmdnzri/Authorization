@@ -197,6 +197,24 @@ Tables: `Purposes`, `ResourcePurposes`, `PurposeAccessLogs`
 Seeded purposes: TREATMENT, RESEARCH, BILLING, AUDIT
 
 
+
+### ✅ 7. RAdAC – Risk-Adaptive Access Control (`feature/07-radac`)
+
+Access adapts to **real-time risk** vs **operational need**.
+
+- Risk factors: device, location, time, auth strength, behavior
+- Decisions: Allow / AllowWithConstraints / Deny
+- Tables: `RiskPolicies`, `RiskAssessmentLogs`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | /api/radac/policies | Admin | Set risk thresholds |
+| GET | /api/radac/policies | Admin | List policies |
+| POST | /api/radac/evaluate | Bearer | Full risk evaluation |
+| GET | /api/radac/resources/{id}/content | Bearer | Content under RAdAC |
+| GET | /api/radac/logs | Admin | Assessment logs |
+
+
 ## Planned (one feature branch each)
 
 - [x] ABAC (`feature/02-abac`)
@@ -204,7 +222,7 @@ Seeded purposes: TREATMENT, RESEARCH, BILLING, AUDIT
 - [x] DAC (`feature/04-dac`)
 - [x] PBAC-Policy (`feature/05-pbac-policy`)
 - [x] PBAC-Purpose (`feature/06-pbac-purpose`)
-- [ ] RAdAC
+- [x] RAdAC (`feature/07-radac`)
 - [ ] ReBAC
 - [ ] PAC
 - [ ] CBAC
