@@ -121,10 +121,30 @@ Decisions based on attributes of **Subject**, **Resource**, **Action** and **Env
 | GET | /api/abac/resources/{id}/content | Bearer | Protected content (403 if denied) |
 
 
+
+### ✅ 3. MAC – Mandatory Access Control (`feature/03-mac`)
+
+System-enforced access based on security labels (Bell-LaPadula model).
+
+- **No Read Up**: subject clearance must be ≥ resource classification
+- **No Write Down**: subject clearance must be ≤ resource classification
+- Owners cannot override the policy (unlike DAC)
+
+Uses existing `ClearanceLevel` (User) and `Sensitivity` (Resource).
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | /api/mac/levels | Anonymous | List security levels + ranks |
+| GET | /api/mac/my-clearance | Bearer | Current user clearance |
+| POST | /api/mac/evaluate | Bearer | Evaluate Read/Write decision |
+| GET | /api/mac/resources/{id}/read | Bearer | Read under MAC (403 if denied) |
+| POST | /api/mac/resources/{id}/write | Bearer | Write under MAC (403 if denied) |
+
+
 ## Planned (one feature branch each)
 
 - [x] ABAC (`feature/02-abac`)
-- [ ] MAC
+- [x] MAC (`feature/03-mac`)
 - [ ] DAC
 - [ ] PBAC (Policy)
 - [ ] PBAC (Purpose)
