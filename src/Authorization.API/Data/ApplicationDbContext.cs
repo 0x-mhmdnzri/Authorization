@@ -21,6 +21,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<Resource> Resources => Set<Resource>();
     public DbSet<AbacPolicy> AbacPolicies => Set<AbacPolicy>();
     public DbSet<ResourcePermission> ResourcePermissions => Set<ResourcePermission>();
+    public DbSet<Policy> Policies => Set<Policy>();
 
     // Future: ReBAC, etc.
     // public DbSet<RelationTuple> RelationTuples { get; set; }
@@ -97,6 +98,24 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
                   .HasForeignKey(p => p.ResourceId)
                   .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(p => new { p.ResourceId, p.SubjectId }).IsUnique();
+        });
+
+
+        // PBAC
+        builder.Entity<Policy>(entity =>
+        {
+            entity.ToTable("Policies");
+            entity.HasKey(p => p.Id);
+            entity.Property(p => p.Name).HasMaxLength(200).IsRequired();
+            entity.Property(p => p.ResourceType).HasMaxLength(100).IsRequired();
+            entity.Property(p => p.Action).HasMaxLength(50).IsRequired();
+            entity.Property(p => p.Effect).HasMaxLength(20).IsRequired();
+            entity.Property(p => p.RequiredRoles).HasMaxLength(500);
+            entity.Property(p => p.RequiredDepartments).HasMaxLength(500);
+            entity.Property(p => p.MinimumClearance).HasMaxLength(50);
+            entity.Property(p => p.MaxResourceSensitivity).HasMaxLength(50);
+            entity.Property(p => p.CreatedBy).HasMaxLength(450);
+            entity.HasIndex(p => new { p.ResourceType, p.Action, p.IsEnabled });
         });
 
     }

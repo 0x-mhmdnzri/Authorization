@@ -61,6 +61,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAbacService, AbacService>();
 builder.Services.AddScoped<IMacService, MacService>();
 builder.Services.AddScoped<IDacService, DacService>();
+builder.Services.AddScoped<IPbacService, PbacService>();
 
 // -------------------- Controllers & OpenAPI --------------------
 builder.Services.AddControllers();
@@ -232,6 +233,57 @@ using (var scope = app.Services.CreateScope())
                     OwnerDepartment = "IT",
                     Sensitivity = "Restricted",
                     OwnerId = adminId
+                }
+            );
+            await context.SaveChangesAsync();
+        }
+
+        // Seed sample PBAC policies (only if none exist)
+        if (!await context.Policies.AnyAsync())
+        {
+            context.Policies.AddRange(
+                new Policy
+                {
+                    Name = "Admin-FullAccess",
+                    Description = "Admins can do anything",
+                    ResourceType = "*",
+                    Action = "*",
+                    Effect = "Allow",
+                    Priority = 1000,
+                    RequiredRoles = "Admin"
+                },
+                new Policy
+                {
+                    Name = "Finance-Budget-Read",
+                    Description = "Finance users can read Budget resources in business hours",
+                    ResourceType = "Budget",
+                    Action = "Read",
+                    Effect = "Allow",
+                    Priority = 200,
+                    RequiredDepartments = "Finance",
+                    RequireBusinessHours = true,
+                    MaxResourceSensitivity = "Confidential"
+                },
+                new Policy
+                {
+                    Name = "SameDept-With-Dac",
+                    Description = "Same department + explicit DAC grant required",
+                    ResourceType = "*",
+                    Action = "Read",
+                    Effect = "Allow",
+                    Priority = 150,
+                    RequireSameDepartment = true,
+                    RequireDacGrant = true
+                },
+                new Policy
+                {
+                    Name = "Deny-Restricted-Default",
+                    Description = "Deny Restricted resources unless higher policy allows",
+                    ResourceType = "*",
+                    Action = "Read",
+                    Effect = "Deny",
+                    Priority = 50,
+                    MaxResourceSensitivity = "Restricted"
                 }
             );
             await context.SaveChangesAsync();
