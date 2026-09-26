@@ -162,12 +162,27 @@ New table: `ResourcePermissions`
 | GET | /api/dac/resources/{id}/content | Bearer | Access content under DAC |
 
 
+
+### ✅ 5. PBAC – Policy-Based Access Control (`feature/05-pbac-policy`)
+
+Central **Policy Decision Point**. Policies are managed centrally and can combine roles, attributes, context and DAC grants.
+
+New table: `Policies`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | /api/pbac/policies | Admin | Create central policy |
+| GET | /api/pbac/policies | Admin | List policies |
+| POST | /api/pbac/evaluate | Bearer | Central evaluate (PDP) |
+| GET | /api/pbac/resources/{id}/content | Bearer | Content via PBAC |
+
+
 ## Planned (one feature branch each)
 
 - [x] ABAC (`feature/02-abac`)
 - [x] MAC (`feature/03-mac`)
 - [x] DAC (`feature/04-dac`)
-- [ ] PBAC (Policy)
+- [x] PBAC-Policy (`feature/05-pbac-policy`)
 - [ ] PBAC (Purpose)
 - [ ] RAdAC
 - [ ] ReBAC
