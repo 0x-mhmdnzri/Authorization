@@ -28,6 +28,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<RiskPolicy> RiskPolicies => Set<RiskPolicy>();
     public DbSet<RiskAssessmentLog> RiskAssessmentLogs => Set<RiskAssessmentLog>();
     public DbSet<RelationTuple> RelationTuples => Set<RelationTuple>();
+    public DbSet<PrivilegeDefinition> PrivilegeDefinitions => Set<PrivilegeDefinition>();
+    public DbSet<PrivilegeElevationRequest> PrivilegeElevationRequests => Set<PrivilegeElevationRequest>();
+    public DbSet<PrivilegedActionLog> PrivilegedActionLogs => Set<PrivilegedActionLog>();
 
     // Future: ReBAC, etc.
     // public DbSet<RelationTuple> RelationTuples { get; set; }
@@ -189,6 +192,44 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.HasIndex(t => new { t.ObjectType, t.ObjectId, t.Relation, t.Subject }).IsUnique();
             entity.HasIndex(t => new { t.ObjectType, t.ObjectId });
             entity.HasIndex(t => t.Subject);
+        });
+
+
+        // PAC – Privileged Access Control
+        builder.Entity<PrivilegeDefinition>(entity =>
+        {
+            entity.ToTable("PrivilegeDefinitions");
+            entity.HasKey(p => p.Id);
+            entity.Property(p => p.Code).HasMaxLength(100).IsRequired();
+            entity.Property(p => p.Name).HasMaxLength(200).IsRequired();
+            entity.Property(p => p.AllowedRequesterRoles).HasMaxLength(500);
+            entity.Property(p => p.ApproverRoles).HasMaxLength(500);
+            entity.HasIndex(p => p.Code).IsUnique();
+        });
+
+        builder.Entity<PrivilegeElevationRequest>(entity =>
+        {
+            entity.ToTable("PrivilegeElevationRequests");
+            entity.HasKey(r => r.Id);
+            entity.Property(r => r.RequesterId).HasMaxLength(450).IsRequired();
+            entity.Property(r => r.Justification).HasMaxLength(1000).IsRequired();
+            entity.Property(r => r.ApproverId).HasMaxLength(450);
+            entity.Property(r => r.ApproverNote).HasMaxLength(500);
+            entity.Property(r => r.Status).HasConversion<int>();
+            entity.HasOne(r => r.Privilege).WithMany().HasForeignKey(r => r.PrivilegeId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(r => new { r.RequesterId, r.Status });
+        });
+
+        builder.Entity<PrivilegedActionLog>(entity =>
+        {
+            entity.ToTable("PrivilegedActionLogs");
+            entity.HasKey(l => l.Id);
+            entity.Property(l => l.UserId).HasMaxLength(450).IsRequired();
+            entity.Property(l => l.PrivilegeCode).HasMaxLength(100);
+            entity.Property(l => l.Action).HasMaxLength(200);
+            entity.Property(l => l.Resource).HasMaxLength(300);
+            entity.Property(l => l.Details).HasMaxLength(1000);
+            entity.HasIndex(l => new { l.UserId, l.PerformedAt });
         });
 
     }

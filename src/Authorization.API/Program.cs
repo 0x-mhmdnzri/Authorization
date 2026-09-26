@@ -65,6 +65,7 @@ builder.Services.AddScoped<IPbacService, PbacService>();
 builder.Services.AddScoped<IPurposeService, PurposeService>();
 builder.Services.AddScoped<IRadacService, RadacService>();
 builder.Services.AddScoped<IRebacService, RebacService>();
+builder.Services.AddScoped<IPacService, PacService>();
 
 // -------------------- Controllers & OpenAPI --------------------
 builder.Services.AddControllers();
@@ -353,6 +354,47 @@ using (var scope = app.Services.CreateScope())
                     CreatedBy = res.OwnerId
                 });
             }
+            await context.SaveChangesAsync();
+        }
+
+        // Seed PAC privilege definitions
+        if (!await context.PrivilegeDefinitions.AnyAsync())
+        {
+            context.PrivilegeDefinitions.AddRange(
+                new PrivilegeDefinition
+                {
+                    Code = "PROD_DB_ADMIN",
+                    Name = "Production Database Admin",
+                    Description = "Temporary admin access to production databases",
+                    DefaultDurationMinutes = 60,
+                    MaxDurationMinutes = 240,
+                    AllowedRequesterRoles = "User,Manager,Admin",
+                    ApproverRoles = "Admin,Manager",
+                    RequiresApproval = true
+                },
+                new PrivilegeDefinition
+                {
+                    Code = "K8S_ADMIN",
+                    Name = "Kubernetes Cluster Admin",
+                    Description = "JIT admin on production Kubernetes",
+                    DefaultDurationMinutes = 30,
+                    MaxDurationMinutes = 120,
+                    AllowedRequesterRoles = "Manager,Admin",
+                    ApproverRoles = "Admin",
+                    RequiresApproval = true
+                },
+                new PrivilegeDefinition
+                {
+                    Code = "SECRET_READ",
+                    Name = "Read Secrets",
+                    Description = "Temporary ability to read secret stores",
+                    DefaultDurationMinutes = 15,
+                    MaxDurationMinutes = 60,
+                    AllowedRequesterRoles = "User,Manager,Admin",
+                    ApproverRoles = "Admin",
+                    RequiresApproval = true
+                }
+            );
             await context.SaveChangesAsync();
         }
     }

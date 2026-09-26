@@ -235,6 +235,29 @@ Format: `objectType:objectId#relation@subject`
 Supports: direct user relations, group#member, parent inheritance for view.
 
 
+
+### ✅ 9. PAC – Privileged Access Control (`feature/09-pac`)
+
+Just-In-Time privileged elevation – no standing admin rights.
+
+Tables: `PrivilegeDefinitions`, `PrivilegeElevationRequests`, `PrivilegedActionLogs`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | /api/pac/privileges | Admin | Define privilege |
+| GET | /api/pac/privileges | Bearer | List privileges |
+| POST | /api/pac/request | Bearer | Request JIT elevation |
+| POST | /api/pac/decide | Admin/Manager | Approve/Deny |
+| GET | /api/pac/my-elevations | Bearer | My active elevations |
+| GET | /api/pac/check/{code} | Bearer | Check active privilege |
+| POST | /api/pac/execute | Bearer | Execute privileged action (logged) |
+| POST | /api/pac/revoke/{id} | Bearer/Admin | Revoke elevation |
+| GET | /api/pac/pending | Admin/Manager | Pending requests |
+| GET | /api/pac/logs | Admin | Action audit log |
+
+Seeded: PROD_DB_ADMIN, K8S_ADMIN, SECRET_READ
+
+
 ## Planned (one feature branch each)
 
 - [x] ABAC (`feature/02-abac`)
@@ -244,7 +267,7 @@ Supports: direct user relations, group#member, parent inheritance for view.
 - [x] PBAC-Purpose (`feature/06-pbac-purpose`)
 - [x] RAdAC (`feature/07-radac`)
 - [x] ReBAC (`feature/08-rebac`)
-- [ ] PAC
+- [x] PAC (`feature/09-pac`)
 - [ ] CBAC
 - [ ] RuBAC
 
