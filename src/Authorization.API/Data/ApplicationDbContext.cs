@@ -27,6 +27,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<PurposeAccessLog> PurposeAccessLogs => Set<PurposeAccessLog>();
     public DbSet<RiskPolicy> RiskPolicies => Set<RiskPolicy>();
     public DbSet<RiskAssessmentLog> RiskAssessmentLogs => Set<RiskAssessmentLog>();
+    public DbSet<RelationTuple> RelationTuples => Set<RelationTuple>();
 
     // Future: ReBAC, etc.
     // public DbSet<RelationTuple> RelationTuples { get; set; }
@@ -172,6 +173,22 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.Property(l => l.Decision).HasMaxLength(50);
             entity.Property(l => l.Reason).HasMaxLength(500);
             entity.HasIndex(l => new { l.UserId, l.AssessedAt });
+        });
+
+
+        // ReBAC
+        builder.Entity<RelationTuple>(entity =>
+        {
+            entity.ToTable("RelationTuples");
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.ObjectType).HasMaxLength(100).IsRequired();
+            entity.Property(t => t.ObjectId).HasMaxLength(200).IsRequired();
+            entity.Property(t => t.Relation).HasMaxLength(100).IsRequired();
+            entity.Property(t => t.Subject).HasMaxLength(300).IsRequired();
+            entity.Property(t => t.CreatedBy).HasMaxLength(450);
+            entity.HasIndex(t => new { t.ObjectType, t.ObjectId, t.Relation, t.Subject }).IsUnique();
+            entity.HasIndex(t => new { t.ObjectType, t.ObjectId });
+            entity.HasIndex(t => t.Subject);
         });
 
     }
