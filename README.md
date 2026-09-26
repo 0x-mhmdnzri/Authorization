@@ -215,6 +215,26 @@ Access adapts to **real-time risk** vs **operational need**.
 | GET | /api/radac/logs | Admin | Assessment logs |
 
 
+
+### ✅ 8. ReBAC – Relationship-Based Access Control (`feature/08-rebac`)
+
+Zanzibar-style relation tuples. Access is determined by relationships.
+
+Table: `RelationTuples`  
+Format: `objectType:objectId#relation@subject`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | /api/rebac/tuples | Bearer | Write relation tuple |
+| DELETE | /api/rebac/tuples | Bearer | Delete tuple |
+| GET | /api/rebac/tuples/{type}/{id} | Bearer | List tuples for object |
+| POST | /api/rebac/check | Bearer | Check permission via relations |
+| GET | /api/rebac/resources/{id}/content | Bearer | Content via ReBAC |
+| POST | /api/rebac/share | Bearer | Share document with user |
+
+Supports: direct user relations, group#member, parent inheritance for view.
+
+
 ## Planned (one feature branch each)
 
 - [x] ABAC (`feature/02-abac`)
@@ -223,7 +243,7 @@ Access adapts to **real-time risk** vs **operational need**.
 - [x] PBAC-Policy (`feature/05-pbac-policy`)
 - [x] PBAC-Purpose (`feature/06-pbac-purpose`)
 - [x] RAdAC (`feature/07-radac`)
-- [ ] ReBAC
+- [x] ReBAC (`feature/08-rebac`)
 - [ ] PAC
 - [ ] CBAC
 - [ ] RuBAC

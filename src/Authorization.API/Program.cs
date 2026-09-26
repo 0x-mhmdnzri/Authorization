@@ -64,6 +64,7 @@ builder.Services.AddScoped<IDacService, DacService>();
 builder.Services.AddScoped<IPbacService, PbacService>();
 builder.Services.AddScoped<IPurposeService, PurposeService>();
 builder.Services.AddScoped<IRadacService, RadacService>();
+builder.Services.AddScoped<IRebacService, RebacService>();
 
 // -------------------- Controllers & OpenAPI --------------------
 builder.Services.AddControllers();
@@ -334,6 +335,24 @@ using (var scope = app.Services.CreateScope())
                 MaxAcceptableRisk = 70,
                 CriticalNeedThreshold = 80
             });
+            await context.SaveChangesAsync();
+        }
+
+        // Seed ReBAC owner tuples for existing resources
+        if (!await context.RelationTuples.AnyAsync())
+        {
+            var resources = await context.Resources.Where(r => r.OwnerId != null).ToListAsync();
+            foreach (var res in resources)
+            {
+                context.RelationTuples.Add(new RelationTuple
+                {
+                    ObjectType = "document",
+                    ObjectId = res.Id.ToString(),
+                    Relation = "owner",
+                    Subject = $"user:{res.OwnerId}",
+                    CreatedBy = res.OwnerId
+                });
+            }
             await context.SaveChangesAsync();
         }
     }
