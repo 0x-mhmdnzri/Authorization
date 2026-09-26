@@ -258,6 +258,24 @@ Tables: `PrivilegeDefinitions`, `PrivilegeElevationRequests`, `PrivilegedActionL
 Seeded: PROD_DB_ADMIN, K8S_ADMIN, SECRET_READ
 
 
+
+### ✅ 10. CBAC – Context-Based Access Control (`feature/10-cbac`)
+
+Access depends on **environmental context**: time, network, device, location, auth strength.
+
+Tables: `ContextPolicies`, `ContextEvaluationLogs`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | /api/cbac/policies | Admin | Create context policy |
+| GET | /api/cbac/policies | Admin | List policies |
+| POST | /api/cbac/evaluate | Bearer | Evaluate with context |
+| GET | /api/cbac/resources/{id}/content | Bearer | Content under CBAC |
+| GET | /api/cbac/logs | Admin | Evaluation logs |
+
+Conditions: business hours, days of week, trusted network, managed device, country allow/block, min auth method, anomalous location.
+
+
 ## Planned (one feature branch each)
 
 - [x] ABAC (`feature/02-abac`)
@@ -268,7 +286,7 @@ Seeded: PROD_DB_ADMIN, K8S_ADMIN, SECRET_READ
 - [x] RAdAC (`feature/07-radac`)
 - [x] ReBAC (`feature/08-rebac`)
 - [x] PAC (`feature/09-pac`)
-- [ ] CBAC
+- [x] CBAC (`feature/10-cbac`)
 - [ ] RuBAC
 
 ## Local development

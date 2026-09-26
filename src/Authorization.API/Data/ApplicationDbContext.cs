@@ -31,6 +31,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<PrivilegeDefinition> PrivilegeDefinitions => Set<PrivilegeDefinition>();
     public DbSet<PrivilegeElevationRequest> PrivilegeElevationRequests => Set<PrivilegeElevationRequest>();
     public DbSet<PrivilegedActionLog> PrivilegedActionLogs => Set<PrivilegedActionLog>();
+    public DbSet<ContextPolicy> ContextPolicies => Set<ContextPolicy>();
+    public DbSet<ContextEvaluationLog> ContextEvaluationLogs => Set<ContextEvaluationLog>();
 
     // Future: ReBAC, etc.
     // public DbSet<RelationTuple> RelationTuples { get; set; }
@@ -230,6 +232,35 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.Property(l => l.Resource).HasMaxLength(300);
             entity.Property(l => l.Details).HasMaxLength(1000);
             entity.HasIndex(l => new { l.UserId, l.PerformedAt });
+        });
+
+
+        // CBAC
+        builder.Entity<ContextPolicy>(entity =>
+        {
+            entity.ToTable("ContextPolicies");
+            entity.HasKey(p => p.Id);
+            entity.Property(p => p.Name).HasMaxLength(200).IsRequired();
+            entity.Property(p => p.ResourceType).HasMaxLength(100);
+            entity.Property(p => p.Action).HasMaxLength(50);
+            entity.Property(p => p.Effect).HasMaxLength(20);
+            entity.Property(p => p.AllowedDaysOfWeek).HasMaxLength(50);
+            entity.Property(p => p.AllowedCountries).HasMaxLength(200);
+            entity.Property(p => p.BlockedCountries).HasMaxLength(200);
+            entity.Property(p => p.MinimumAuthMethod).HasMaxLength(50);
+            entity.HasIndex(p => new { p.ResourceType, p.Action, p.IsEnabled });
+        });
+
+        builder.Entity<ContextEvaluationLog>(entity =>
+        {
+            entity.ToTable("ContextEvaluationLogs");
+            entity.HasKey(l => l.Id);
+            entity.Property(l => l.UserId).HasMaxLength(450).IsRequired();
+            entity.Property(l => l.Action).HasMaxLength(50);
+            entity.Property(l => l.Reason).HasMaxLength(500);
+            entity.Property(l => l.MatchedPolicy).HasMaxLength(200);
+            entity.Property(l => l.ContextSnapshot).HasMaxLength(1000);
+            entity.HasIndex(l => new { l.UserId, l.EvaluatedAt });
         });
 
     }
