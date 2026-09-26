@@ -66,6 +66,7 @@ builder.Services.AddScoped<IPurposeService, PurposeService>();
 builder.Services.AddScoped<IRadacService, RadacService>();
 builder.Services.AddScoped<IRebacService, RebacService>();
 builder.Services.AddScoped<IPacService, PacService>();
+builder.Services.AddScoped<ICbacService, CbacService>();
 
 // -------------------- Controllers & OpenAPI --------------------
 builder.Services.AddControllers();
@@ -393,6 +394,58 @@ using (var scope = app.Services.CreateScope())
                     AllowedRequesterRoles = "User,Manager,Admin",
                     ApproverRoles = "Admin",
                     RequiresApproval = true
+                }
+            );
+            await context.SaveChangesAsync();
+        }
+
+        // Seed CBAC context policies
+        if (!await context.ContextPolicies.AnyAsync())
+        {
+            context.ContextPolicies.AddRange(
+                new ContextPolicy
+                {
+                    Name = "BusinessHours-TrustedNetwork",
+                    Description = "Allow read during business hours from trusted network",
+                    ResourceType = "*",
+                    Action = "Read",
+                    Effect = "Allow",
+                    Priority = 100,
+                    AllowedHourStart = 8,
+                    AllowedHourEnd = 18,
+                    AllowedDaysOfWeek = "Mon,Tue,Wed,Thu,Fri",
+                    RequireTrustedNetwork = true
+                },
+                new ContextPolicy
+                {
+                    Name = "MFA-Required-For-Write",
+                    Description = "Writes require MFA and managed device",
+                    ResourceType = "*",
+                    Action = "Write",
+                    Effect = "Allow",
+                    Priority = 200,
+                    RequireManagedDevice = true,
+                    MinimumAuthMethod = "MFA"
+                },
+                new ContextPolicy
+                {
+                    Name = "Block-Anomalous-Location",
+                    Description = "Deny any access from anomalous locations",
+                    ResourceType = "*",
+                    Action = "*",
+                    Effect = "Deny",
+                    Priority = 500,
+                    BlockAnomalousLocation = true
+                },
+                new ContextPolicy
+                {
+                    Name = "Weekend-Deny",
+                    Description = "Deny access on weekends unless higher priority allows",
+                    ResourceType = "*",
+                    Action = "*",
+                    Effect = "Deny",
+                    Priority = 50,
+                    AllowedDaysOfWeek = "Sat,Sun"
                 }
             );
             await context.SaveChangesAsync();
