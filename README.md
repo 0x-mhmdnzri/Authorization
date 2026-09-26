@@ -101,9 +101,29 @@ docker compose up --build
 | GET | /api/rbac/admin-only | Admin | Demo protected |
 | GET | /api/rbac/manager-area | Manager,Admin | Demo protected |
 
+
+### ✅ 2. ABAC – Attribute-Based Access Control (`feature/02-abac`)
+
+Decisions based on attributes of **Subject**, **Resource**, **Action** and **Environment**.
+
+- New tables: `Resources`, `AbacPolicies`
+- Policy engine evaluates: same department, business hours, clearance level, sensitivity
+- Seeded sample policies and resources
+- Finance demo user: `finance@authorization.local` / `Finance123!`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | /api/abac/resources | Admin | Create resource |
+| GET | /api/abac/resources | Bearer | List resources |
+| POST | /api/abac/policies | Admin | Create ABAC policy |
+| GET | /api/abac/policies | Admin | List policies |
+| POST | /api/abac/evaluate | Bearer | Evaluate access (core ABAC) |
+| GET | /api/abac/resources/{id}/content | Bearer | Protected content (403 if denied) |
+
+
 ## Planned (one feature branch each)
 
-- [ ] ABAC
+- [x] ABAC (`feature/02-abac`)
 - [ ] MAC
 - [ ] DAC
 - [ ] PBAC (Policy)
