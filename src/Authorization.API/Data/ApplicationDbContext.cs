@@ -33,6 +33,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<PrivilegedActionLog> PrivilegedActionLogs => Set<PrivilegedActionLog>();
     public DbSet<ContextPolicy> ContextPolicies => Set<ContextPolicy>();
     public DbSet<ContextEvaluationLog> ContextEvaluationLogs => Set<ContextEvaluationLog>();
+    public DbSet<AccessRule> AccessRules => Set<AccessRule>();
+    public DbSet<RuleRateCounter> RuleRateCounters => Set<RuleRateCounter>();
 
     // Future: ReBAC, etc.
     // public DbSet<RelationTuple> RelationTuples { get; set; }
@@ -261,6 +263,32 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.Property(l => l.MatchedPolicy).HasMaxLength(200);
             entity.Property(l => l.ContextSnapshot).HasMaxLength(1000);
             entity.HasIndex(l => new { l.UserId, l.EvaluatedAt });
+        });
+
+
+        // RuBAC
+        builder.Entity<AccessRule>(entity =>
+        {
+            entity.ToTable("AccessRules");
+            entity.HasKey(r => r.Id);
+            entity.Property(r => r.Name).HasMaxLength(200).IsRequired();
+            entity.Property(r => r.Effect).HasMaxLength(20).IsRequired();
+            entity.Property(r => r.ResourceType).HasMaxLength(100);
+            entity.Property(r => r.Action).HasMaxLength(50);
+            entity.Property(r => r.SourceIpAllowList).HasMaxLength(500);
+            entity.Property(r => r.SourceIpDenyList).HasMaxLength(500);
+            entity.Property(r => r.DaysOfWeek).HasMaxLength(50);
+            entity.Property(r => r.RequiredDepartment).HasMaxLength(100);
+            entity.Property(r => r.RequiredRole).HasMaxLength(100);
+            entity.HasIndex(r => new { r.IsEnabled, r.Priority });
+        });
+
+        builder.Entity<RuleRateCounter>(entity =>
+        {
+            entity.ToTable("RuleRateCounters");
+            entity.HasKey(c => c.Id);
+            entity.Property(c => c.UserId).HasMaxLength(450).IsRequired();
+            entity.HasIndex(c => new { c.UserId, c.RuleId }).IsUnique();
         });
 
     }

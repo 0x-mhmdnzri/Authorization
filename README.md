@@ -276,7 +276,27 @@ Tables: `ContextPolicies`, `ContextEvaluationLogs`
 Conditions: business hours, days of week, trusted network, managed device, country allow/block, min auth method, anomalous location.
 
 
-## Planned (one feature branch each)
+
+### ✅ 11. RuBAC – Rule-Based Access Control (`feature/11-rubac`)
+
+Predefined **if-then rules** (IP, time, department, role, rate-limit).
+
+Tables: `AccessRules`, `RuleRateCounters`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | /api/rubac/rules | Admin | Create rule |
+| GET | /api/rubac/rules | Admin | List rules |
+| DELETE | /api/rubac/rules/{id} | Admin | Disable rule |
+| POST | /api/rubac/evaluate | Bearer | Evaluate against rules |
+| GET | /api/rubac/resources/{id}/content | Bearer | Content under RuBAC |
+
+Seeded: Deny-Blocked-IPs, BusinessHours-Allow, Finance-Dept-Only-Budget, Admin-Always, RateLimit-General
+
+
+## All models implemented ✅
+
+Originally planned (now complete):
 
 - [x] ABAC (`feature/02-abac`)
 - [x] MAC (`feature/03-mac`)
@@ -287,7 +307,7 @@ Conditions: business hours, days of week, trusted network, managed device, count
 - [x] ReBAC (`feature/08-rebac`)
 - [x] PAC (`feature/09-pac`)
 - [x] CBAC (`feature/10-cbac`)
-- [ ] RuBAC
+- [x] RuBAC (`feature/11-rubac`)
 
 ## Local development
 

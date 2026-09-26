@@ -67,6 +67,7 @@ builder.Services.AddScoped<IRadacService, RadacService>();
 builder.Services.AddScoped<IRebacService, RebacService>();
 builder.Services.AddScoped<IPacService, PacService>();
 builder.Services.AddScoped<ICbacService, CbacService>();
+builder.Services.AddScoped<IRubacService, RubacService>();
 
 // -------------------- Controllers & OpenAPI --------------------
 builder.Services.AddControllers();
@@ -446,6 +447,58 @@ using (var scope = app.Services.CreateScope())
                     Effect = "Deny",
                     Priority = 50,
                     AllowedDaysOfWeek = "Sat,Sun"
+                }
+            );
+            await context.SaveChangesAsync();
+        }
+
+        // Seed RuBAC rules
+        if (!await context.AccessRules.AnyAsync())
+        {
+            context.AccessRules.AddRange(
+                new AccessRule
+                {
+                    Name = "Deny-Blocked-IPs",
+                    Description = "Deny known bad IPs",
+                    Priority = 1000,
+                    Effect = "Deny",
+                    SourceIpDenyList = "192.0.2.1,203.0.113.0/24"
+                },
+                new AccessRule
+                {
+                    Name = "BusinessHours-Allow",
+                    Description = "Allow during business hours weekdays",
+                    Priority = 100,
+                    Effect = "Allow",
+                    TimeStartHour = 8,
+                    TimeEndHour = 18,
+                    DaysOfWeek = "Mon,Tue,Wed,Thu,Fri"
+                },
+                new AccessRule
+                {
+                    Name = "Finance-Dept-Only-Budget",
+                    Description = "Budget resources only for Finance department",
+                    Priority = 200,
+                    Effect = "Allow",
+                    ResourceType = "Budget",
+                    Action = "Read",
+                    RequiredDepartment = "Finance"
+                },
+                new AccessRule
+                {
+                    Name = "Admin-Always",
+                    Description = "Admins always allowed",
+                    Priority = 900,
+                    Effect = "Allow",
+                    RequiredRole = "Admin"
+                },
+                new AccessRule
+                {
+                    Name = "RateLimit-General",
+                    Description = "Max 100 requests per hour per user",
+                    Priority = 50,
+                    Effect = "Allow",
+                    RateLimitPerHour = 100
                 }
             );
             await context.SaveChangesAsync();
