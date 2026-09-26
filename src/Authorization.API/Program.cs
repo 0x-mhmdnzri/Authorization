@@ -60,6 +60,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAbacService, AbacService>();
 builder.Services.AddScoped<IMacService, MacService>();
+builder.Services.AddScoped<IDacService, DacService>();
 
 // -------------------- Controllers & OpenAPI --------------------
 builder.Services.AddControllers();

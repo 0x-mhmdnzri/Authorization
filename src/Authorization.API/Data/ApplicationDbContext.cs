@@ -20,6 +20,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     // ABAC tables
     public DbSet<Resource> Resources => Set<Resource>();
     public DbSet<AbacPolicy> AbacPolicies => Set<AbacPolicy>();
+    public DbSet<ResourcePermission> ResourcePermissions => Set<ResourcePermission>();
 
     // Future: ReBAC, etc.
     // public DbSet<RelationTuple> RelationTuples { get; set; }
@@ -82,6 +83,22 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.Property(p => p.RequiredSensitivityMax).HasMaxLength(50);
             entity.HasIndex(p => new { p.ResourceType, p.Action, p.IsEnabled });
         });
+
+        // DAC
+        builder.Entity<ResourcePermission>(entity =>
+        {
+            entity.ToTable("ResourcePermissions");
+            entity.HasKey(p => p.Id);
+            entity.Property(p => p.SubjectId).HasMaxLength(450).IsRequired();
+            entity.Property(p => p.Permissions).HasMaxLength(100).IsRequired();
+            entity.Property(p => p.GrantedById).HasMaxLength(450).IsRequired();
+            entity.HasOne(p => p.Resource)
+                  .WithMany()
+                  .HasForeignKey(p => p.ResourceId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(p => new { p.ResourceId, p.SubjectId }).IsUnique();
+        });
+
     }
 }
 

@@ -141,11 +141,32 @@ Uses existing `ClearanceLevel` (User) and `Sensitivity` (Resource).
 | POST | /api/mac/resources/{id}/write | Bearer | Write under MAC (403 if denied) |
 
 
+
+### ✅ 4. DAC – Discretionary Access Control (`feature/04-dac`)
+
+Resource **owner** decides who gets access (classic ACL model).
+
+- Owner always has full control
+- Owner (or user with Share) can grant/revoke permissions
+- Permissions: Read, Write, Delete, Share (or Full)
+- Optional expiration on grants
+
+New table: `ResourcePermissions`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | /api/dac/grant | Bearer | Grant access (owner/Share) |
+| POST | /api/dac/revoke | Bearer | Revoke access (owner only) |
+| GET | /api/dac/resources/{id}/acl | Bearer | List ACL (owner) |
+| POST | /api/dac/evaluate | Bearer | Evaluate permission |
+| GET | /api/dac/resources/{id}/content | Bearer | Access content under DAC |
+
+
 ## Planned (one feature branch each)
 
 - [x] ABAC (`feature/02-abac`)
 - [x] MAC (`feature/03-mac`)
-- [ ] DAC
+- [x] DAC (`feature/04-dac`)
 - [ ] PBAC (Policy)
 - [ ] PBAC (Purpose)
 - [ ] RAdAC
