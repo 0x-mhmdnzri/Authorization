@@ -28,9 +28,8 @@ public class AuthController : ControllerBase
         _tokenService = tokenService;
     }
 
-    /// <summary>
-    /// Register a new user (creates Identity User table entry).
-    /// </summary>
+    private string? ClientIp => HttpContext.Connection.RemoteIpAddress?.ToString();
+
     [HttpPost("register")]
     [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
@@ -46,36 +45,25 @@ public class AuthController : ControllerBase
             FirstName = request.FirstName,
             LastName = request.LastName,
             Department = request.Department,
-            EmailConfirmed = true // for demo
+            ClearanceLevel = request.ClearanceLevel,
+            EmailConfirmed = true
         };
 
         var result = await _userManager.CreateAsync(user, request.Password);
         if (!result.Succeeded)
             return BadRequest(result.Errors);
 
-        // Default role for new users (RBAC baseline)
         if (!await _roleManager.RoleExistsAsync("User"))
-        {
             await _roleManager.CreateAsync(new ApplicationRole { Name = "User", Description = "Default user role" });
-        }
+
         await _userManager.AddToRoleAsync(user, "User");
 
-        var token = await _tokenService.GenerateTokenAsync(user);
+        var pair = await _tokenService.GenerateTokenPairAsync(user, ClientIp);
         var roles = await _userManager.GetRolesAsync(user);
 
-        return Ok(new AuthResponse
-        {
-            Token = token,
-            Expiration = _tokenService.GetExpiration(),
-            UserId = user.Id,
-            Email = user.Email!,
-            Roles = roles
-        });
+        return Ok(ToAuthResponse(pair, user, roles));
     }
 
-    /// <summary>
-    /// Login and receive JWT containing roles (RBAC claims).
-    /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
@@ -88,22 +76,62 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
             return Unauthorized(new { message = "Invalid credentials." });
 
-        var token = await _tokenService.GenerateTokenAsync(user);
+        var pair = await _tokenService.GenerateTokenPairAsync(user, ClientIp);
         var roles = await _userManager.GetRolesAsync(user);
 
-        return Ok(new AuthResponse
+        return Ok(ToAuthResponse(pair, user, roles));
+    }
+
+    /// <summary>Rotate refresh token and issue new access + refresh (A3).</summary>
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
+    {
+        var pair = await _tokenService.RefreshAsync(request.RefreshToken, ClientIp);
+        if (pair is null)
+            return Unauthorized(new { message = "Invalid or expired refresh token." });
+
+        return Ok(new
         {
-            Token = token,
-            Expiration = _tokenService.GetExpiration(),
-            UserId = user.Id,
-            Email = user.Email!,
-            Roles = roles
+            pair.AccessToken,
+            pair.AccessTokenExpiration,
+            pair.RefreshToken,
+            pair.RefreshTokenExpiration,
+            Token = pair.AccessToken,
+            Expiration = pair.AccessTokenExpiration
         });
     }
 
-    /// <summary>
-    /// Get current authenticated user info.
-    /// </summary>
+    /// <summary>Extend refresh lifetime and issue new access token without rotation (A3).</summary>
+    [HttpPost("renew")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Renew([FromBody] RefreshRequest request)
+    {
+        var pair = await _tokenService.RenewAsync(request.RefreshToken, ClientIp);
+        if (pair is null)
+            return Unauthorized(new { message = "Invalid or expired refresh token." });
+
+        return Ok(new
+        {
+            pair.AccessToken,
+            pair.AccessTokenExpiration,
+            pair.RefreshToken,
+            pair.RefreshTokenExpiration,
+            Token = pair.AccessToken,
+            Expiration = pair.AccessTokenExpiration
+        });
+    }
+
+    [HttpPost("revoke")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Revoke([FromBody] RefreshRequest request)
+    {
+        var ok = await _tokenService.RevokeAsync(request.RefreshToken, ClientIp, "User logout");
+        if (!ok)
+            return BadRequest(new { message = "Token not found or already revoked." });
+        return Ok(new { message = "Revoked." });
+    }
+
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> Me()
@@ -128,7 +156,20 @@ public class AuthController : ControllerBase
             user.LastName,
             user.Department,
             user.ClearanceLevel,
+            user.IsGod,
             Roles = roles
         });
     }
+
+    private static AuthResponse ToAuthResponse(TokenPair pair, ApplicationUser user, IList<string> roles) => new()
+    {
+        AccessToken = pair.AccessToken,
+        AccessTokenExpiration = pair.AccessTokenExpiration,
+        RefreshToken = pair.RefreshToken,
+        RefreshTokenExpiration = pair.RefreshTokenExpiration,
+        UserId = user.Id,
+        Email = user.Email!,
+        Roles = roles,
+        IsGod = user.IsGod
+    };
 }

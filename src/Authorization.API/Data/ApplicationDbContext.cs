@@ -5,11 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Authorization.API.Data;
 
-/// <summary>
-/// EF Core DbContext using ASP.NET Core Identity tables.
-/// IdentityServer / Duende can share the same Identity stores if needed later.
-/// Custom tables for advanced authorization models will be added incrementally.
-/// </summary>
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, string>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
@@ -17,7 +12,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     {
     }
 
-    // ABAC tables
     public DbSet<Resource> Resources => Set<Resource>();
     public DbSet<AbacPolicy> AbacPolicies => Set<AbacPolicy>();
     public DbSet<ResourcePermission> ResourcePermissions => Set<ResourcePermission>();
@@ -36,14 +30,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<AccessRule> AccessRules => Set<AccessRule>();
     public DbSet<RuleRateCounter> RuleRateCounters => Set<RuleRateCounter>();
 
-    // Future: ReBAC, etc.
-    // public DbSet<RelationTuple> RelationTuples { get; set; }
+    // Admin panel / auth foundation
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<MenuSection> MenuSections => Set<MenuSection>();
+    public DbSet<SectionPermission> SectionPermissions => Set<SectionPermission>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
-        // Customize Identity table names if desired (optional)
         builder.Entity<ApplicationUser>(entity =>
         {
             entity.ToTable("Users");
@@ -51,6 +46,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.Property(u => u.LastName).HasMaxLength(100);
             entity.Property(u => u.Department).HasMaxLength(100);
             entity.Property(u => u.ClearanceLevel).HasMaxLength(50);
+            entity.HasIndex(u => u.IsGod);
         });
 
         builder.Entity<ApplicationRole>(entity =>
@@ -63,14 +59,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // Keep other Identity tables with default names or customize:
         builder.Entity<IdentityUserRole<string>>().ToTable("UserRoles");
         builder.Entity<IdentityUserClaim<string>>().ToTable("UserClaims");
         builder.Entity<IdentityUserLogin<string>>().ToTable("UserLogins");
         builder.Entity<IdentityRoleClaim<string>>().ToTable("RoleClaims");
         builder.Entity<IdentityUserToken<string>>().ToTable("UserTokens");
 
-        // ABAC
         builder.Entity<Resource>(entity =>
         {
             entity.ToTable("Resources");
@@ -98,7 +92,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.HasIndex(p => new { p.ResourceType, p.Action, p.IsEnabled });
         });
 
-        // DAC
         builder.Entity<ResourcePermission>(entity =>
         {
             entity.ToTable("ResourcePermissions");
@@ -106,15 +99,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.Property(p => p.SubjectId).HasMaxLength(450).IsRequired();
             entity.Property(p => p.Permissions).HasMaxLength(100).IsRequired();
             entity.Property(p => p.GrantedById).HasMaxLength(450).IsRequired();
-            entity.HasOne(p => p.Resource)
-                  .WithMany()
-                  .HasForeignKey(p => p.ResourceId)
-                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(p => p.Resource).WithMany().HasForeignKey(p => p.ResourceId).OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(p => new { p.ResourceId, p.SubjectId }).IsUnique();
         });
 
-
-        // PBAC
         builder.Entity<Policy>(entity =>
         {
             entity.ToTable("Policies");
@@ -131,8 +119,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.HasIndex(p => new { p.ResourceType, p.Action, p.IsEnabled });
         });
 
-
-        // Purpose-Based Access Control
         builder.Entity<Purpose>(entity =>
         {
             entity.ToTable("Purposes");
@@ -162,8 +148,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.HasIndex(l => new { l.UserId, l.ResourceId, l.AccessedAt });
         });
 
-
-        // RAdAC
         builder.Entity<RiskPolicy>(entity =>
         {
             entity.ToTable("RiskPolicies");
@@ -182,8 +166,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.HasIndex(l => new { l.UserId, l.AssessedAt });
         });
 
-
-        // ReBAC
         builder.Entity<RelationTuple>(entity =>
         {
             entity.ToTable("RelationTuples");
@@ -198,8 +180,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.HasIndex(t => t.Subject);
         });
 
-
-        // PAC – Privileged Access Control
         builder.Entity<PrivilegeDefinition>(entity =>
         {
             entity.ToTable("PrivilegeDefinitions");
@@ -236,8 +216,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.HasIndex(l => new { l.UserId, l.PerformedAt });
         });
 
-
-        // CBAC
         builder.Entity<ContextPolicy>(entity =>
         {
             entity.ToTable("ContextPolicies");
@@ -265,8 +243,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.HasIndex(l => new { l.UserId, l.EvaluatedAt });
         });
 
-
-        // RuBAC
         builder.Entity<AccessRule>(entity =>
         {
             entity.ToTable("AccessRules");
@@ -291,6 +267,48 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.HasIndex(c => new { c.UserId, c.RuleId }).IsUnique();
         });
 
+        // Refresh tokens
+        builder.Entity<RefreshToken>(entity =>
+        {
+            entity.ToTable("RefreshTokens");
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.UserId).HasMaxLength(450).IsRequired();
+            entity.Property(t => t.Token).HasMaxLength(500).IsRequired();
+            entity.Property(t => t.CreatedByIp).HasMaxLength(100);
+            entity.Property(t => t.RevokedByIp).HasMaxLength(100);
+            entity.Property(t => t.ReplacedByToken).HasMaxLength(500);
+            entity.Property(t => t.ReasonRevoked).HasMaxLength(200);
+            entity.HasIndex(t => t.Token).IsUnique();
+            entity.HasIndex(t => t.UserId);
+            entity.HasOne(t => t.User).WithMany(u => u.RefreshTokens).HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Menu sections
+        builder.Entity<MenuSection>(entity =>
+        {
+            entity.ToTable("MenuSections");
+            entity.HasKey(s => s.Id);
+            entity.Property(s => s.Key).HasMaxLength(100).IsRequired();
+            entity.Property(s => s.Title).HasMaxLength(200).IsRequired();
+            entity.Property(s => s.Description).HasMaxLength(500);
+            entity.Property(s => s.Href).HasMaxLength(300);
+            entity.Property(s => s.Icon).HasMaxLength(100);
+            entity.Property(s => s.AuthorizationMethods).HasMaxLength(200).IsRequired();
+            entity.Property(s => s.ParentKey).HasMaxLength(100);
+            entity.HasIndex(s => s.Key).IsUnique();
+            entity.HasIndex(s => s.SortOrder);
+        });
+
+        // Section permissions
+        builder.Entity<SectionPermission>(entity =>
+        {
+            entity.ToTable("SectionPermissions");
+            entity.HasKey(p => p.Id);
+            entity.Property(p => p.UserId).HasMaxLength(450).IsRequired();
+            entity.Property(p => p.GrantedById).HasMaxLength(450).IsRequired();
+            entity.HasOne(p => p.MenuSection).WithMany(s => s.Permissions).HasForeignKey(p => p.MenuSectionId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(p => p.User).WithMany(u => u.SectionPermissions).HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(p => new { p.UserId, p.MenuSectionId }).IsUnique();
+        });
     }
 }
-
