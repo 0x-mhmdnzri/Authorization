@@ -7,11 +7,14 @@
 - JWT Authentication
 - Fully Dockerized
 
+> **AI agents:** Start with [`SOURCE-OF-TRUTH.md`](SOURCE-OF-TRUTH.md) and [`KNOWLEDGE-INDEX.md`](KNOWLEDGE-INDEX.md).
+
 ## Project Structure
 
 ```
 Authorization/
 ├── docker-compose.yml
+├── Authorization-Models-Scenarios.md  # Theory & scenarios for all models
 ├── src/
 │   └── Authorization.API/
 │       ├── Controllers/
@@ -26,10 +29,9 @@ Authorization/
 │       ├── Services/
 │       │   └── TokenService.cs
 │       ├── Dockerfile
-│       ├── .dockerignore
 │       ├── Program.cs
 │       └── appsettings.json
-└── Authorization-Models-Scenarios.md  # Theory & scenarios for all models
+└── (AI knowledge base – see KNOWLEDGE-INDEX.md)
 ```
 
 ## Quick Start with Docker
@@ -54,7 +56,7 @@ docker compose up --build
 
 - Custom `ApplicationUser` + `ApplicationRole` on top of Identity tables
 - Roles: Admin, Manager, User (seeded)
-- JWT contains role claims
+- JWT contains role claims + department + clearance attributes
 - Endpoints under `/api/rbac/*` protected by `[Authorize(Roles = "...")]`
 
 **Key endpoints:**
@@ -67,8 +69,10 @@ docker compose up --build
 | GET | /api/rbac/roles | Admin | List roles |
 | POST | /api/rbac/roles | Admin | Create role |
 | POST | /api/rbac/assign-role | Admin | Assign role to user |
+| DELETE | /api/rbac/remove-role | Admin | Remove role from user |
 | GET | /api/rbac/admin-only | Admin | Example protected |
 | GET | /api/rbac/manager-area | Manager,Admin | Example protected |
+| GET | /api/rbac/user-area | Authenticated | Any logged-in user |
 
 ## Next models (planned)
 
@@ -76,10 +80,12 @@ docker compose up --build
 - ReBAC (Relationship-Based)
 - MAC, DAC, RuBAC, PBAC, RAdAC, PAC, CBAC
 
+See `Authorization-Models-Scenarios.md` for full theory and implementation sketches.
+
 ## Local development (without Docker)
 
 1. Start PostgreSQL and update `appsettings.Development.json` connection string
-2. `dotnet ef migrations add Initial --project src/Authorization.API`
+2. `dotnet ef migrations add Initial --project src/Authorization.API` (optional – auto-migrate on startup)
 3. `dotnet run --project src/Authorization.API`
 
 ## Notes
@@ -87,4 +93,4 @@ docker compose up --build
 - Identity tables are customized (Users, Roles, UserRoles, ...)
 - Ready to share the same Identity store with Duende IdentityServer / OpenIddict later if needed
 - Migrations run automatically on startup (MigrateAsync + seed)
-
+- Knowledge base files at the root keep AI agents aligned with the real state of the project
