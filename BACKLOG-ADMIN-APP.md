@@ -7,66 +7,38 @@ Goal: Next.js admin panel + complete org access architecture with all authorizat
 
 ## Phase A – Backend foundation ✅ DONE
 
-| ID | Task | Status |
-|----|------|--------|
-| A1 | RefreshToken entity + DbContext + ensure tables | ✅ |
-| A2 | TokenService: Access (15m) + Refresh (7d) + Renew | ✅ |
-| A3 | AuthController: login/register both tokens; POST /refresh; /renew; /revoke | ✅ |
-| A4 | ApplicationUser.IsGod + seed single GOD user | ✅ |
-| A5 | MenuSection + SectionPermission models | ✅ |
-| A6 | Seed default menu sections + Admin full access | ✅ |
-| A7 | GET /api/menu – SSR-ready menu from DB | ✅ |
-| A8 | Admin endpoints: create user, assign section permissions | ✅ |
-| A9 | Update AuthDtos | ✅ |
-
-### New credentials (seeded)
-| User | Password | Notes |
-|------|----------|-------|
-| `god@authorization.local` | `God123!` | Only GOD (`IsGod=true`) |
-| `admin@authorization.local` | `Admin123!` | Admin + all section perms |
-| `finance@authorization.local` | `Finance123!` | Demo ABAC user |
-
-### New API surface
-- `POST /api/auth/login` → AccessToken + RefreshToken
-- `POST /api/auth/refresh` → rotate tokens
-- `POST /api/auth/renew` → new access, same refresh (extended)
-- `POST /api/auth/revoke` → logout
-- `GET /api/menu` → hierarchical menu for current user
-- `GET /api/admin/users`
-- `POST /api/admin/users`
-- `POST /api/admin/users/section-permissions`
-- `GET /api/admin/users/{id}/section-permissions`
+See previous commits. Access/Refresh/Renew, GOD, Menu API, Admin users API.
 
 ---
 
-## Phase B – admin-app scaffold ⬅️ NEXT
+## Phase B – admin-app scaffold ✅ DONE
 
 | ID | Task | Status |
 |----|------|--------|
-| B1 | Create `src/admin-app` (Next.js 15 App Router, TypeScript, Tailwind) | ⬜ |
-| B2 | NextAuth credentials provider wrapping backend access/refresh/renew | ⬜ |
-| B3 | Env config (API_URL, NEXTAUTH_SECRET, …) | ⬜ |
-| B4 | Auth pages: login | ⬜ |
-| B5 | Protected layout shell | ⬜ |
+| B1 | Create `src/admin-app` (Next.js 15 App Router, TypeScript, Tailwind) | ✅ |
+| B2 | NextAuth credentials provider wrapping backend access/refresh/renew | ✅ |
+| B3 | Env config (`.env.example`) | ✅ |
+| B4 | Auth pages: login | ✅ |
+| B5 | Protected layout shell + middleware | ✅ |
 
 ---
 
-## Phase C – SSR Menu + Shell
+## Phase C – SSR Menu + Shell ✅ DONE (included in scaffold)
 
 | ID | Task | Status |
 |----|------|--------|
-| C1 | Server Component that calls GET /api/menu with access token | ⬜ |
-| C2 | Sidebar rendered fully on server from menu payload | ⬜ |
-| C3 | Method badges (RBAC / ABAC / …) on each nav item | ⬜ |
-| C4 | Read-only vs write UI based on section permissions | ⬜ |
+| C1 | Server Component calls GET /api/menu | ✅ |
+| C2 | Sidebar fully SSR from menu payload | ✅ |
+| C3 | Method badges on each nav item | ✅ |
+| C4 | Read-only indicator when `canWrite=false` | ✅ |
 
 ---
 
-## Phase D – Admin pages (per section)
+## Phase D – Admin pages (per section) ⬅️ NEXT
 
 | ID | Task | Methods labeled | Status |
 |----|------|-----------------|--------|
-| D1 | Dashboard / Overview | — | ⬜ |
+| D1 | Dashboard / Overview | CBAC,RBAC | ✅ (basic) |
 | D2 | Users management | RBAC + DAC | ⬜ |
 | D3 | Roles & assignments | RBAC | ⬜ |
 | D4 | Resources & ACL | DAC + MAC | ⬜ |
@@ -94,10 +66,18 @@ Goal: Next.js admin panel + complete org access architecture with all authorizat
 
 ---
 
-## Locked decisions
+## How to run admin-app locally
 
-- Folder: `src/admin-app`
-- GOD: exactly one user (`IsGod = true`)
-- Menu: dedicated endpoint, data from DB, fully SSR
-- Auth: Access + Refresh + Renew from backend, wrapped in NextAuth
-- Git Flow: feature branch from develop
+```bash
+# Terminal 1 – API
+docker compose up --build
+# or: dotnet run --project src/Authorization.API
+
+# Terminal 2 – Admin UI
+cd src/admin-app
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+Open http://localhost:3000 — login with `god@authorization.local` / `God123!`
