@@ -6,28 +6,29 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // -------------------- Database (PostgreSQL) --------------------
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+                       ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // -------------------- Identity (Identity tables) --------------------
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
-{
-    options.Password.RequireDigit = true;
-    options.Password.RequireLowercase = true;
-    options.Password.RequireUppercase = false;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequiredLength = 6;
-    options.User.RequireUniqueEmail = true;
-})
-.AddEntityFrameworkStores<ApplicationDbContext>()
-.AddDefaultTokenProviders();
+    {
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequiredLength = 6;
+        options.User.RequireUniqueEmail = true;
+    })
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
 
 // -------------------- JWT Authentication --------------------
 var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key missing");
@@ -35,24 +36,24 @@ var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "Authorization.API";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "Authorization.API";
 
 builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtIssuer,
-        ValidAudience = jwtAudience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-        ClockSkew = TimeSpan.Zero
-    };
-});
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ClockSkew = TimeSpan.Zero
+        };
+    });
 
 builder.Services.AddAuthorization();
 
@@ -72,6 +73,28 @@ builder.Services.AddScoped<IRubacService, RubacService>();
 // -------------------- Controllers & OpenAPI --------------------
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new()
+    {
+        Title = "Authorization API",
+        Version = "v1"
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.ParameterLocation.Header
+    });
+
+    options.AddSecurityRequirement(document => new()
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+});
 
 var app = builder.Build();
 
@@ -79,7 +102,8 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    // OpenAPI JSON available at /openapi/v1.json
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
@@ -298,9 +322,12 @@ using (var scope = app.Services.CreateScope())
         // Seed purposes (Purpose-Based AC)
         if (!await context.Purposes.AnyAsync())
         {
-            var treatment = new Purpose { Code = "TREATMENT", Name = "Treatment", Description = "Clinical treatment of the patient" };
-            var research = new Purpose { Code = "RESEARCH", Name = "Research", Description = "Scientific research (requires extra approval)" };
-            var billing = new Purpose { Code = "BILLING", Name = "Billing", Description = "Insurance and billing operations" };
+            var treatment = new Purpose
+                { Code = "TREATMENT", Name = "Treatment", Description = "Clinical treatment of the patient" };
+            var research = new Purpose
+                { Code = "RESEARCH", Name = "Research", Description = "Scientific research (requires extra approval)" };
+            var billing = new Purpose
+                { Code = "BILLING", Name = "Billing", Description = "Insurance and billing operations" };
             var audit = new Purpose { Code = "AUDIT", Name = "Audit", Description = "Compliance and internal audit" };
             context.Purposes.AddRange(treatment, research, billing, audit);
             await context.SaveChangesAsync();
@@ -311,7 +338,8 @@ using (var scope = app.Services.CreateScope())
             {
                 // All resources allow TREATMENT and BILLING by default
                 context.ResourcePurposes.Add(new ResourcePurpose { ResourceId = res.Id, PurposeId = treatment.Id });
-                context.ResourcePurposes.Add(new ResourcePurpose { ResourceId = res.Id, PurposeId = billing.Id, AllowedRoles = "Admin,Manager" });
+                context.ResourcePurposes.Add(new ResourcePurpose
+                    { ResourceId = res.Id, PurposeId = billing.Id, AllowedRoles = "Admin,Manager" });
                 // RESEARCH only on non-Restricted and requires consent
                 if (res.Sensitivity != "Restricted" && res.Sensitivity != "TopSecret")
                 {
@@ -324,6 +352,7 @@ using (var scope = app.Services.CreateScope())
                     });
                 }
             }
+
             await context.SaveChangesAsync();
         }
 
@@ -356,6 +385,7 @@ using (var scope = app.Services.CreateScope())
                     CreatedBy = res.OwnerId
                 });
             }
+
             await context.SaveChangesAsync();
         }
 
