@@ -533,6 +533,9 @@ using (var scope = app.Services.CreateScope())
             );
             await context.SaveChangesAsync();
         }
+
+        // Admin panel: GOD + menu sections + section permissions
+        await AdminPanelSeed.SeedAsync(context, userManager, roleManager);
     }
     catch (Exception ex)
     {
