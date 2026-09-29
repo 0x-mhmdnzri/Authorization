@@ -57,6 +57,21 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+// -------------------- CORS (admin-app) --------------------
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AdminApp", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:3000",
+                "http://127.0.0.1:3000"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
 // -------------------- Services --------------------
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAbacService, AbacService>();
@@ -107,6 +122,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AdminApp");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
