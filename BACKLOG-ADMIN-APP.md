@@ -5,23 +5,41 @@ Goal: Next.js admin panel + complete org access architecture with all authorizat
 
 ---
 
-## Phase A – Backend foundation (CURRENT)
+## Phase A – Backend foundation ✅ DONE
 
 | ID | Task | Status |
 |----|------|--------|
-| A1 | RefreshToken entity + DbContext + migration | 🔄 in progress |
-| A2 | TokenService: Access (15m) + Refresh (7d) + Renew | ⬜ |
-| A3 | AuthController: login/register return both tokens; POST /refresh; POST /renew; POST /revoke | ⬜ |
-| A4 | ApplicationUser.IsGod + seed single GOD user | ⬜ |
-| A5 | MenuSection + SectionPermission models (read/write per section) | ⬜ |
-| A6 | Seed default menu sections + GOD full access | ⬜ |
-| A7 | GET /api/menu – SSR-ready menu from DB filtered by user permissions | ⬜ |
-| A8 | Admin endpoints: create user, assign section permissions (GOD / higher manager) | ⬜ |
-| A9 | Update AuthDtos + OpenAPI | ⬜ |
+| A1 | RefreshToken entity + DbContext + ensure tables | ✅ |
+| A2 | TokenService: Access (15m) + Refresh (7d) + Renew | ✅ |
+| A3 | AuthController: login/register both tokens; POST /refresh; /renew; /revoke | ✅ |
+| A4 | ApplicationUser.IsGod + seed single GOD user | ✅ |
+| A5 | MenuSection + SectionPermission models | ✅ |
+| A6 | Seed default menu sections + Admin full access | ✅ |
+| A7 | GET /api/menu – SSR-ready menu from DB | ✅ |
+| A8 | Admin endpoints: create user, assign section permissions | ✅ |
+| A9 | Update AuthDtos | ✅ |
+
+### New credentials (seeded)
+| User | Password | Notes |
+|------|----------|-------|
+| `god@authorization.local` | `God123!` | Only GOD (`IsGod=true`) |
+| `admin@authorization.local` | `Admin123!` | Admin + all section perms |
+| `finance@authorization.local` | `Finance123!` | Demo ABAC user |
+
+### New API surface
+- `POST /api/auth/login` → AccessToken + RefreshToken
+- `POST /api/auth/refresh` → rotate tokens
+- `POST /api/auth/renew` → new access, same refresh (extended)
+- `POST /api/auth/revoke` → logout
+- `GET /api/menu` → hierarchical menu for current user
+- `GET /api/admin/users`
+- `POST /api/admin/users`
+- `POST /api/admin/users/section-permissions`
+- `GET /api/admin/users/{id}/section-permissions`
 
 ---
 
-## Phase B – admin-app scaffold
+## Phase B – admin-app scaffold ⬅️ NEXT
 
 | ID | Task | Status |
 |----|------|--------|
@@ -49,7 +67,7 @@ Goal: Next.js admin panel + complete org access architecture with all authorizat
 | ID | Task | Methods labeled | Status |
 |----|------|-----------------|--------|
 | D1 | Dashboard / Overview | — | ⬜ |
-| D2 | Users management (create, list, assign roles & section perms) | RBAC + DAC | ⬜ |
+| D2 | Users management | RBAC + DAC | ⬜ |
 | D3 | Roles & assignments | RBAC | ⬜ |
 | D4 | Resources & ACL | DAC + MAC | ⬜ |
 | D5 | ABAC policies | ABAC | ⬜ |
