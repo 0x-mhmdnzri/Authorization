@@ -39,6 +39,29 @@ services:
       - auth-network
     restart: unless-stopped
 
+  admin-web:
+    build:
+      context: ./src/admin-app
+      dockerfile: Dockerfile
+      args:
+        API_URL: http://api:8080
+        NEXT_PUBLIC_API_URL: http://localhost:8080
+        NEXTAUTH_URL: http://localhost:3000
+        NEXTAUTH_SECRET: dev-nextauth-secret-change-in-production-32chars
+    container_name: authorization-admin
+    environment:
+      API_URL: http://api:8080
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: dev-nextauth-secret-change-in-production-32chars
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks:
+      - auth-network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
 
